@@ -1,0 +1,9 @@
+DEFAULT_UNKNOWN_RECIPE_CODE = 0b000 
+
+PART_TYPE_TO_RECIPE_CODE = {
+    "A_001_PLATE": 0b001,   
+    "A_002_BALL":  0b010,  
+    "A_003_ANGLE": 0b011,   
+    "A_004_MOUNT": 0b101,
+    "A_005_CAST":  0b110,
+}

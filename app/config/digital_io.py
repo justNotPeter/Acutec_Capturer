@@ -1,0 +1,16 @@
+DIGITAL_INPUTS_FROM_FANUC = {
+    "HEARTBEAT": 10,
+    "CAPTURE_REQUEST": 11,   
+    "ROBOT_IN_POSITION_FOR_CAPTURE": 12,  
+    "PART_SEQUENCE_DONE": 13,    
+}
+
+DIGITAL_OUTPUTS_FROM_PI = {
+    "CAPTURE_DONE": 22,         
+    "ERROR_SIGNAL": 23,  
+    "RESET_SIGNAL": 24,
+    
+    "RECIPE_BIT_2": 25,
+    "RECIPE_BIT_1": 26,
+    "RECIPE_BIT_0": 27,       
+}
