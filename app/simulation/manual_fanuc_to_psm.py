@@ -3,9 +3,10 @@ import time
 
 os.environ["PI_SIM"] = "1"
 
-from app.pi_state_machine import PiOrchestrator, State
-from app.hardware.fanuc import fanuc, GPIO
+from app.state_machine import PiOrchestrator, State
+from app.communication_interface.pi_io import fanuc, GPIO
 from app.config.digital_io import DIGITAL_INPUTS_FROM_FANUC
+from app.config.gpio_setup import init_gpio_pins
 
 def fake_decode_qr_code(frame):
     return {
@@ -61,6 +62,8 @@ def print_menu():
 
 def main():
     print("=== PI CAPTURER INTERACTIVE SIMULATION ===")
+    
+    from app.config.gpio_setup import init_gpio_pins
 
     PiOrchestrator.init_pi_capturer_system()
 

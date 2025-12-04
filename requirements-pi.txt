@@ -3,3 +3,4 @@ sqlite-utils
 opencv-python
 picamera2
 RPi.GPIO
+robodk
