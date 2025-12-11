@@ -1,14 +1,11 @@
-# app/simulation_full.py
-
 import os
 import time
 
-# Force simulation mode so Pi + FanucSim both use DummyGPIO
 os.environ["PI_SIM"] = "1"
 
-from app.hardware.pi_state_machine import PiOrchestrator
-from app.hardware.robodk_fanuc_state_machine import RoboDKFanuc
-from app.communication.pi_io import GPIO
+from app.state_machine.pi_state_machine import PiOrchestrator
+from app.state_machine.robodk_fanuc_state_machine import RoboDKFanuc
+from app.config.gpio_setup import GPIO, init_gpio_pins
 
 from app.config.digital_io import (
     DIGITAL_OUTPUTS_FROM_CONVEYOR_TO_FANUC,
@@ -16,22 +13,31 @@ from app.config.digital_io import (
     DIGITAL_OUTPUTS_FROM_PI_TO_FANUC,
 )
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_DIR = os.path.join(BASE_DIR, "output")
+os.makedirs(LOG_DIR, exist_ok=True)
+LOG_PATH = os.path.join(LOG_DIR, "simulation.txt")
 
-# =====================================================================
-# Helper Functions
-# =====================================================================
 
-def set_conveyor_part_present(high: bool):
-    """
-    Simulate the conveyor/sensor telling Fanuc that a part has arrived
-    AND the conveyor is stopped.
-    """
+def log_line(log_file, text: str) -> None:
+    """Write a single line to the simulation log and flush."""
+    log_file.write(text + "\n")
+    log_file.flush()
+
+
+def set_conveyor_part_present(high: bool, log_file=None):
+    """Simulate conveyor telling Fanuc a part is present / not present."""
     pin = DIGITAL_OUTPUTS_FROM_CONVEYOR_TO_FANUC["PD_CONVEYOR_STOPPED"]
     GPIO.output(pin, GPIO.HIGH if high else GPIO.LOW)
-    print(
-        f"[SIM] PD_CONVEYOR_STOPPED set to "
-        f"{'HIGH (part present)'}" if high else "LOW (no part)"
+
+    msg = (
+        "[SIM] PD_CONVEYOR_STOPPED set to HIGH (part present)"
+        if high
+        else "[SIM] PD_CONVEYOR_STOPPED set to LOW (no part)"
     )
+    print(msg)
+    if log_file:
+        log_line(log_file, msg)
 
 
 def read_pin(mapping: dict, name: str) -> int:
@@ -39,11 +45,7 @@ def read_pin(mapping: dict, name: str) -> int:
     return GPIO.input(pin)
 
 
-# =====================================================================
-# Status Block
-# =====================================================================
-
-def print_status(robo: RoboDKFanuc):
+def print_status(robo: RoboDKFanuc, log_file=None):
     hb = read_pin(DIGITAL_OUTPUTS_FROM_FANUC_TO_PI, "HEARTBEAT")
     in_pos = read_pin(DIGITAL_OUTPUTS_FROM_FANUC_TO_PI, "ROBOT_IN_POSITION_FOR_CAPTURE")
     seq_done = read_pin(DIGITAL_OUTPUTS_FROM_FANUC_TO_PI, "PART_SEQUENCE_DONE")
@@ -53,25 +55,32 @@ def print_status(robo: RoboDKFanuc):
 
     conveyor = read_pin(DIGITAL_OUTPUTS_FROM_CONVEYOR_TO_FANUC, "PD_CONVEYOR_STOPPED")
 
-    print("\n================= FULL SYSTEM STATUS =================")
-    print(" PI STATE MACHINE:")
-    print(f"   current_state   : {PiOrchestrator.current_state}")
-    print(f"   current_part    : {PiOrchestrator.current_part}")
-    print(f"   image_view_idx  : {PiOrchestrator.image_view_index}")
-    print()
-    print(" ROBO SIM (RoboDKFanuc):")
-    print(f"   current_state   : {robo.current_state}")
-    print(f"   part_type       : {robo.current_part_type}")
-    print(f"   view_idx        : {robo.current_view_idx}")
-    print()
-    print(" GPIO SIGNALS:")
-    print(f"   HEARTBEAT (11)                    : {hb}")
-    print(f"   ROBOT_IN_POSITION_FOR_CAPTURE(12) : {in_pos}")
-    print(f"   PART_SEQUENCE_DONE (13)           : {seq_done}")
-    print(f"   CAPTURE_DONE (22)                 : {capture_done}")
-    print(f"   RESET_SIGNAL (24)                 : {reset}")
-    print(f"   PD_CONVEYOR_STOPPED (10)          : {conveyor}")
-    print("======================================================\n")
+    block = [
+        "\n================= FULL SYSTEM STATUS =================",
+        " PI STATE MACHINE:",
+        f"   current_state   : {PiOrchestrator.current_state}",
+        f"   current_part    : {PiOrchestrator.current_part}",
+        f"   image_view_idx  : {PiOrchestrator.current_part.get('view_index')}",
+        "",
+        " ROBO SIM (RoboDKFanuc):",
+        f"   current_state   : {robo.current_state}",
+        f"   part_type       : {robo.current_part_type}",
+        f"   view_idx        : {robo.current_view_idx}",
+        "",
+        " GPIO SIGNALS:",
+        f"   HEARTBEAT (11)                    : {hb}",
+        f"   ROBOT_IN_POSITION_FOR_CAPTURE(12) : {in_pos}",
+        f"   PART_SEQUENCE_DONE (13)           : {seq_done}",
+        f"   CAPTURE_DONE (22)                 : {capture_done}",
+        f"   RESET_SIGNAL (24)                 : {reset}",
+        f"   PD_CONVEYOR_STOPPED (10)          : {conveyor}",
+        "======================================================\n",
+    ]
+
+    for line in block:
+        print(line)
+        if log_file:
+            log_line(log_file, line)
 
 
 def print_menu():
@@ -84,58 +93,137 @@ def print_menu():
     print(" q) Quit")
 
 
-# =====================================================================
-# Main Simulation Loop
-# =====================================================================
+def log_sim_step(
+    log_file,
+    step_counter: int,
+    mode: str,
+    robo: RoboDKFanuc,
+    substep: int | None = None,
+) -> int:
+    step_counter += 1
+
+    pi_before = PiOrchestrator.current_state
+    robo_before = robo.current_state
+
+    robo.step_once()
+    PiOrchestrator.step_once()
+
+    pi_after = PiOrchestrator.current_state
+    robo_after = robo.current_state
+
+    pi_from = pi_before.name
+    pi_to = pi_after.name
+    robo_from = robo_before.name
+    robo_to = robo_after.name
+
+    if substep is not None:
+        header = f"[STEP {step_counter:04d}] Mode={mode} (substep {substep})"
+    else:
+        header = f"[STEP {step_counter:04d}] Mode={mode}"
+
+    log_line(log_file, header)
+    log_line(
+        log_file,
+        f"  Pi State : {pi_from} -> {pi_to}"
+        if pi_from != pi_to
+        else f"  Pi State : {pi_from} (no change)",
+    )
+    log_line(
+        log_file,
+        f"  Robo State : {robo_from} -> {robo_to}"
+        if robo_from != robo_to
+        else f"  Robo State : {robo_from} (no change)",
+    )
+
+    log_line(
+        log_file,
+        f"  Pi Context   : part={PiOrchestrator.current_part}, view_idx={PiOrchestrator.current_part.get('view_index')}",
+    )
+    log_line(
+        log_file,
+        f"  Robo Context : part_type={robo.current_part_type}, view_idx={robo.current_view_idx}",
+    )
+    log_line(log_file, "")  
+
+    return step_counter
+
 
 def main():
-    print("=== ACUTEC FULL-CELL SIMULATION (Pi + RoboDKFanuc + DummyGPIO) ===")
+    print("ACUTEC FULL-CELL SIMULATION (Pi + RoboDKFanuc + DummyGPIO)")
 
-    # 1) Initialize Pi (camera + GPIO)
-    PiOrchestrator.init_pi_capturer_system()
+    with open(LOG_PATH, "w", encoding="utf-8") as log_file:
+        log_line(
+            log_file,
+            "=== ACUTEC FULL-CELL SIMULATION LOG (Pi + RoboDKFanuc + DummyGPIO) ===",
+        )
+        init_gpio_pins()
+        log_line(log_file, "GPIO pins initialized.")
 
-    # 2) Initialize Fanuc RoboDK Simulation
-    robo = RoboDKFanuc(max_views_for_demo=3)
+        PiOrchestrator.init_pi_capturer_system()
+        log_line(log_file, "Pi capturer system initialized (camera + IO).")
 
-    # Start simulation with no part present
-    set_conveyor_part_present(False)
+        robo = RoboDKFanuc(max_views_for_demo=3)
+        log_line(log_file, "RoboDK Fanuc simulator initialized.")
 
-    while True:
-        print_status(robo)
-        print_menu()
-        choice = input("Choose action: ").strip().lower()
+        set_conveyor_part_present(False, log_file)
 
-        if choice == "q":
-            print("Exiting simulation...")
-            break
+        step_counter = 0
 
-        elif choice == "1":
-            set_conveyor_part_present(True)
+        while True:
+            print_status(robo, log_file)
+            print_menu()
+            choice = input("Choose action: ").strip().lower()
 
-        elif choice == "2":
-            set_conveyor_part_present(False)
+            if choice == "q":
+                msg = "Exiting simulation..."
+                print(msg)
+                log_line(log_file, msg)
+                break
 
-        elif choice == "s":
-            print("[SIM] Stepping system once...")
-            robo.step_once()
-            PiOrchestrator.step_once()
+            elif choice == "1":
+                log_line(log_file, "[USER] Action: Simulate PART ARRIVAL.")
+                set_conveyor_part_present(True, log_file)
 
-        elif choice == "f":
-            print("[SIM] Fast-forward 20 steps...")
-            for _ in range(20):
-                robo.step_once()
-                PiOrchestrator.step_once()
-                time.sleep(0.05)
+            elif choice == "2":
+                log_line(log_file, "[USER] Action: Clear part (no part present).")
+                set_conveyor_part_present(False, log_file)
 
-        elif choice == "a":
-            print("[SIM] Auto-running 200 steps...")
-            for _ in range(200):
-                robo.step_once()
-                PiOrchestrator.step_once()
-                time.sleep(0.03)
+            elif choice == "s":
+                print("[SIM] Stepping system once...")
+                log_line(log_file, "[USER] Action: Single step (s).")
+                step_counter = log_sim_step(
+                    log_file, step_counter, mode="single-step", robo=robo
+                )
 
-        else:
-            print("Invalid choice, try again.")
+            elif choice == "f":
+                print("[SIM] Fast-forward 20 steps...")
+                log_line(log_file, "[USER] Action: Fast-forward 20 steps (f).")
+                for i in range(1, 21):
+                    step_counter = log_sim_step(
+                        log_file,
+                        step_counter,
+                        mode="fast-forward",
+                        robo=robo,
+                        substep=i,
+                    )
+                    time.sleep(0.05)
+
+            elif choice == "a":
+                print("[SIM] Auto-running 200 steps...")
+                log_line(log_file, "[USER] Action: Auto-run 200 steps (a).")
+                for i in range(1, 201):
+                    step_counter = log_sim_step(
+                        log_file,
+                        step_counter,
+                        mode="auto-run",
+                        robo=robo,
+                        substep=i,
+                    )
+                    time.sleep(0.03)
+
+            else:
+                print("Invalid choice, try again.")
+                log_line(log_file, f"[USER] Invalid menu choice: {choice!r}")
 
 
 if __name__ == "__main__":

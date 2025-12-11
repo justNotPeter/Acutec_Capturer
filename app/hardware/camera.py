@@ -1,7 +1,9 @@
 import os
-import time
 import cv2
 from dotenv import load_dotenv
+from datetime import datetime, timezone
+from typing import Tuple
+import numpy as np
 from app.config.camera_config import DEFAULT_CAMERA_CONFIG
 
 env_path = os.getenv("ENV_FILE", ".env.local")
@@ -31,6 +33,7 @@ class Camera:
 
         self.apply_settings()
         print("📷 Camera opened!")
+        
 
     def apply_settings(self):
         if self.cap is None:
@@ -41,19 +44,41 @@ class Camera:
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, h)
 
         if self.exposure_us is not None:
-            self.cap.set(cv2.CAP_PROP_EXPOSURE, float(self.exposure_us))
+            self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.25) 
+            
+            exposure_seconds = float(self.exposure_us) / 1_000_000
+            self.cap.set(cv2.CAP_PROP_EXPOSURE, exposure_seconds)
+
         if self.gain is not None:
             self.cap.set(cv2.CAP_PROP_GAIN, float(self.gain))
 
-    def capture_frame(self):
+        actual_w = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        actual_h = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        print(f"Camera resolution applied: {actual_w}x{actual_h}")
+        
+
+    def capture_frame(self) -> tuple[np.ndarray, str]:
         if self.cap is None:
             raise RuntimeError("Camera not opened!")
 
         ret, frame = self.cap.read()
         if not ret:
             raise RuntimeError("❌ Failed to capture frame from camera!")
+        
+        capture_time_utc = datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace("+00:00", "Z")
 
-        return frame
+        return frame, capture_time_utc
+    
+    
+    def set_resolution(self, width: int, height: int):
+        print(f"Default resolution is {width}x{height}!")
+     
+        self.resolution = (width, height)
+        
+        if self.cap is not None:
+            self.apply_settings()
+            print(f"New resolution is set to {width}x{height}!")
+            
 
     def release(self):
         if self.cap:

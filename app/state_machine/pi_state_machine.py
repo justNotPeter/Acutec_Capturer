@@ -1,11 +1,27 @@
+import time
+import cv2
+
+from datetime import datetime, timezone
+import numpy as np
 from enum import Enum, auto
 from app.hardware.camera import camera
-from app.communication_interface.pi_io import PiIOInterface
+from app.handshake_interface.pi_io import PiCapturerIOInterface
 from app.service.qr_code_reader import decode_qr_code
 from app.service.quality_control import compute_qc_metrics, check_quality
-import time
 
-class State(Enum):
+def encode_to_jpeg(frame: np.ndarray, quality: int = 92) -> bytes:
+    encode_params = [int(cv2.IMWRITE_JPEG_QUALITY), quality]
+    success, encoded_image = cv2.imencode(".jpg", frame, encode_params)
+
+    if not success:
+        print("JPEG encoding failed!")
+        raise RuntimeError("Failed to encode frame to JPEG!")
+
+    jpeg_bytes = encoded_image.tobytes()
+    
+    return jpeg_bytes
+
+class PiState(Enum):
     WAITING_FOR_PART = auto()
     SCANNING_QR_CODE = auto()
     SENDING_RECIPE = auto()
@@ -19,30 +35,53 @@ class State(Enum):
 class PiStateMachine:
     def __init__(self):
         self.camera = camera
-        self.robot_interface = PiIOInterface
-        
-        self.current_state = State.WAITING_FOR_PART
-        self.current_part = {}
+        self.io = PiCapturerIOInterface
+        self.current_state = PiState.WAITING_FOR_PART
+        self.current_part = {
+            "part_id": None,
+            "part_type": None,
+            "view_index": 0,
+            "sharpness": 0,
+            "brightness": 0,
+            "contrast": 0,
+            "captured_at": None
+        }
+        self.inspection_event = 0
         self.max_qr_tries = 3
         self.max_capture_tries = 5
-        self.image_view_index = 0
+        
+        self._reset_sent = False
         
         self.function_handler = {
-            State.WAITING_FOR_PART: self._handle_waiting_for_part,
-            State.SCANNING_QR_CODE: self._handle_scanning_for_qr_code,
-            State.SENDING_RECIPE: self._handle_sending_recipe,
-            State.WAITING_FOR_RECIPE_CONFIRMATION: self._handle_waiting_for_recipe_confirmation,
-            State.WAITING_FOR_ROBOT_POSE: self._handle_waiting_for_robot_pose,
-            State.CAPTURING_OBJECT_VIEW: self._handle_capturing_object_view,
-            State.WAITING_FOR_CAPTURE_ACK: self._handle_waiting_for_capture_ack, 
-            State.DONE: self._handle_done,
-            State.ERROR: self._handle_error,
+            PiState.WAITING_FOR_PART: self._handle_waiting_for_part,
+            PiState.SCANNING_QR_CODE: self._handle_scanning_for_qr_code,
+            PiState.SENDING_RECIPE: self._handle_sending_recipe,
+            PiState.WAITING_FOR_RECIPE_CONFIRMATION: self._handle_waiting_for_recipe_confirmation,
+            PiState.WAITING_FOR_ROBOT_POSE: self._handle_waiting_for_robot_pose,
+            PiState.CAPTURING_OBJECT_VIEW: self._handle_capturing_object_view,
+            PiState.WAITING_FOR_CAPTURE_ACK: self._handle_waiting_for_capture_ack, 
+            PiState.DONE: self._handle_done,
+            PiState.ERROR: self._handle_error,
         }
         
     def init_pi_capturer_system(self):
         self.camera.init_camera()
-        self.robot_interface.init_GPIO()
         print(f"System started! Current state is {self.current_state}")
+        
+        
+    def _start_new_inspection(self, part_id: str, part_type: str):
+        self.inspection_event += 1
+        
+        # qr_scanned_utc_time = datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace("+00:00", "Z")
+        
+        self.current_part.update({
+            "part_id": part_id,
+            "part_type": part_type 
+        })
+        
+        print(f"[Pi] inspection event counts: {self.inspection_event}!")
+        
+        print(f"[Pi] Started new inspection for part {self.current_part.get('part_id', 'N/A')}")
         
     def step_once(self):
         health_state = self.check_robot_health()
@@ -69,18 +108,29 @@ class PiStateMachine:
             
                  
     def check_robot_health(self):
-        if not self.robot_interface.report_connection_alive_status():
+        if not self.io.report_connection_alive_status():
             print("❌ No heartbeat from Fanuc!")
-            return State.ERROR
+            return PiState.ERROR
         return
+    
+    def _reset_current_part(self):
+        self.current_part = {
+            "part_id": None,
+            "part_type": None,
+            "view_index": 0,
+            "sharpness": 0,
+            "brightness": 0,
+            "contrast": 0,
+            "captured_at": None
+        }
     
               
     def _handle_waiting_for_part(self):
         print("Waiting for new part to arrive")
         
-        if self.robot_interface.is_fanuc_in_position_for_capture():
+        if self.io.is_fanuc_in_position_for_capture():
             print("Part detected - Fanuc is in position for scanning QR code!")
-            return State.SCANNING_QR_CODE
+            return PiState.SCANNING_QR_CODE
         
         time.sleep(0.02)
         return 
@@ -93,7 +143,7 @@ class PiStateMachine:
         qr_code_data = None
         
         while not qr_code_data and qr_retry_count <= self.max_qr_tries:
-            frame = self.camera.capture_frame()
+            frame, capture_time = self.camera.capture_frame()
             qr_code_data, bbox = decode_qr_code(frame, simulated_result={"part_id": "SIM_001","part_type": "A_001_PLATE"})
             
             if qr_code_data:
@@ -106,69 +156,68 @@ class PiStateMachine:
         
         if not qr_code_data:
             print(f"❌ Failed to read QR code after {self.max_qr_tries} times!")
-            return State.ERROR
-            
-        self.current_part = {
-            "id": qr_code_data["part_id"],
-            "type": qr_code_data["part_type"]
-        }
+            return PiState.ERROR
         
-        return State.SENDING_RECIPE
+        part_id = qr_code_data["part_id"]
+        part_type = qr_code_data["part_type"]
+        
+        self._start_new_inspection(part_id, part_type)
+        
+        return PiState.SENDING_RECIPE
     
     
     def _handle_sending_recipe(self):
-        part_type = self.current_part["type"]
+        part_type = self.current_part["part_type"]
         
         print(f"Sending part type recipe for {part_type} to Fanuc!")
         
-        success = self.robot_interface.send_required_recipe(part_type)
+        success = self.io.send_required_recipe(part_type)
         
         if not success:
             print("❌ Could not send recipe to Fanuc!")
-            return State.ERROR
+            return PiState.ERROR
         
         print("Waiting for robot to move to capture pose…")
-        return State.WAITING_FOR_RECIPE_CONFIRMATION
+        return PiState.WAITING_FOR_RECIPE_CONFIRMATION
     
     def _handle_waiting_for_recipe_confirmation(self):
-        # if self.robot_interface.is_recipe_confirmed():
-        if self.robot_interface.is_robot_ack():
+        # if self.io.is_recipe_confirmed():
+        if self.io.is_robot_ack():
             print("Robot confirmed recipe!")
-            return State.WAITING_FOR_ROBOT_POSE
+            return PiState.WAITING_FOR_ROBOT_POSE
         return None
     
         
-    def _handle_waiting_for_robot_pose(self):
+    def _handle_waiting_for_robot_pose(self) -> PiState | None:
         print("Checking pose and sequence status...")
 
-        if self.robot_interface.is_every_part_view_capured():
+        if self.io.is_every_part_view_capured():
             print("✅ Part sequence done. All views captured!")
             time.sleep(0.1)
-            return State.DONE
+            return PiState.DONE
 
-        if not self.robot_interface.is_fanuc_in_position_for_capture():
+        if not self.io.is_fanuc_in_position_for_capture():
             time.sleep(0.05)
             return 
 
         print("Requesting capture view!")
-        return State.CAPTURING_OBJECT_VIEW
+        return PiState.CAPTURING_OBJECT_VIEW
     
     
-    def _handle_capturing_object_view(self):
+    def _handle_capturing_object_view(self) -> PiState:
         print("Capturing image!")
         
         num_try = 0
         qc_pass = False
-        frame = None
 
         while num_try < self.max_capture_tries and not qc_pass:
-            frame = self.camera.capture_frame()
+            frame, captured_time = self.camera.capture_frame()
             
             frame_metrics = compute_qc_metrics(frame, simulated_result={"sharpness": 110, "brightness": 70, "contrast": 30})
             qc_pass = check_quality(frame_metrics)
             
             if qc_pass:
-                print(f"View #{self.image_view_index} passed QC!")
+                print(f"View #{self.current_part.get('view_index', 'N/A')} passed QC!")
                 break
             
             num_try += 1
@@ -177,49 +226,56 @@ class PiStateMachine:
             
         if not qc_pass:
             print("[PI] ❌ Max retries reached for this view. Going to ERROR.")
-            self.robot_interface.send_error_signal()
-            return State.ERROR
-            
-        self.image_view_index += 1
+            self.io.send_error_signal()
+            return PiState.ERROR
                 
-        self.current_part["view_index"] = self.image_view_index
+        self.current_part.update({
+            "view_index": self.current_part["view_index"] + 1, 
+            "qc_sharpness": frame_metrics["sharpness"],
+            "qc_brightness": frame_metrics["brightness"],
+            "qc_contrast": frame_metrics["contrast"],
+            "captured_at": captured_time 
+        })
         
-        # send_to_jetson(frame: nparray, current_part: dict)
+        jpeg_frame = encode_to_jpeg(frame)
+        
+        # dispatch_to_jetson(jpeg_frame, self.current_part)
 
-        self.robot_interface.set_capture_done(True)
-        return State.WAITING_FOR_CAPTURE_ACK
+        self.io.set_capture_done(True)
+        return PiState.WAITING_FOR_CAPTURE_ACK
     
     
-    def _handle_done(self):
+    def _handle_done(self) -> PiState:
         print(f"Part {self.current_part.get('id')} fully processed!")
-        self.current_part = {}
-        self.image_view_index = 0
         
-        self.robot_interface.set_capture_done(False)
+        self._reset_current_part()
+
+        self.io.set_capture_done(False)
         
-        self.robot_interface.send_reset_signal()
-        return State.WAITING_FOR_PART
+        self.io.send_reset_signal()
+        # self._reset_sent = True
+        
+        return PiState.WAITING_FOR_PART
     
     
-    
-    def _handle_waiting_for_capture_ack(self):
-        if self.robot_interface.is_robot_ack():
+    def _handle_waiting_for_capture_ack(self) -> PiState | None:
+        if self.io.is_robot_ack():
             print("Robot acknowledged CAPTURE_DONE, waiting for next pose…")
             
-            self.robot_interface.set_capture_done(False)
-            return State.WAITING_FOR_ROBOT_POSE
+            self.io.set_capture_done(False)
+            return PiState.WAITING_FOR_ROBOT_POSE
         return None
     
     
-    def _handle_error(self):
+    def _handle_error(self) -> None | PiState:
         print("ERROR: Staying in error for now!")
         
-        self.robot_interface.send_error_signal()
+        self.io.send_error_signal()
         time.sleep(0.5)
         return
     
     
     def handle_reset_state(self):
-        return State.WAITING_FOR_PART
+        return PiState.WAITING_FOR_PART
     
 PiOrchestrator = PiStateMachine()

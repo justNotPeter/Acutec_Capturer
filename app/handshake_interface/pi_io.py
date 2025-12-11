@@ -67,18 +67,26 @@ class PiIOInterface:
             self.send_error_signal()
             return False
         
-    def send_reset_signal(self, pulse_seconds: float = 0.05):
+    def send_reset_signal(self):
         try:
             pin = self.digital_io_from_pi_to_fanuc["RESET_SIGNAL"]
             GPIO.output(pin, GPIO.HIGH)
-            time.sleep(pulse_seconds)
-            GPIO.output(pin, GPIO.LOW)
             
-            print(f"RESET signal sent for ({pulse_seconds}s)!")
+            print(f"RESET signal sent!")
             
         except Exception as e:
             print(f"Failed to send RESET_SEQUENCE: {e}")
             self.send_error_signal()
+            
+    def clear_reset_signal(cls):
+        try:
+            pin = DIGITAL_OUTPUTS_FROM_PI_TO_FANUC["RESET_SIGNAL"]
+            GPIO.output(pin, GPIO.LOW)
+            print("RESET signal cleared!")
+            
+        except Exception as e:
+            print(f"Failed to clear RESET_SIGNAL: {e}")
+            cls.send_error_signal()
         
     def send_error_signal(self):
         try:
@@ -158,4 +166,4 @@ class PiIOInterface:
         except Exception as e:
             print(f"GPIO cleanup failed: {e}")
 
-PiIOInterface = PiIOInterface()
+PiCapturerIOInterface = PiIOInterface()

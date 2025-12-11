@@ -8,7 +8,6 @@ def decode_qr_code(
     simulated_result: Optional[Dict[str, str]] = None
 ) -> Tuple[Optional[Dict[str, str]], Optional[np.ndarray]]:
 
-    # --- Simulation mode override ---
     if simulated_result is not None:
         return simulated_result, None
 

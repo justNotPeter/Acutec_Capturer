@@ -65,7 +65,6 @@ def init_gpio_pins() -> None:
 
 
 def cleanup_gpio() -> None:
-    """Clean up all GPIO state."""
     try:
         GPIO.cleanup()
         print("GPIO cleanup complete!")
