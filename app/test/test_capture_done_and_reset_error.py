@@ -12,12 +12,12 @@ from app.config.gpio_setup import GPIO, init_gpio_pins
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Test capture done!"
+        description="Test capture done + error signal + reset signal!"
     )
     return parser.parse_args()
 
 
-def set_recipe_bits(code: int) -> None:
+def send_capture_signal() -> None:
     capture_pin = DIGITAL_OUTPUTS_FROM_PI_TO_FANUC["CAPTURE_DONE"]
 
     time.sleep(0.01)
@@ -25,15 +25,35 @@ def set_recipe_bits(code: int) -> None:
     GPIO.output(capture_pin, GPIO.HIGH if capture_pin else GPIO.LOW)
 
     print("Capture signal sent!")
+    
+def send_reset_signal() -> None:
+    reset_pin = DIGITAL_OUTPUTS_FROM_PI_TO_FANUC["RESET_SIGNAL"]
+    
+    time.sleep(0.01)
+
+    GPIO.output(reset_pin, GPIO.HIGH if reset_pin else GPIO.LOW)
+
+    print("RESET signal sent!")
+    
+def send_error_signal() -> None:
+    error_pin = DIGITAL_OUTPUTS_FROM_PI_TO_FANUC["ERROR_SIGNAL"]
+    
+    time.sleep(0.01)
+
+    GPIO.output(error_pin, GPIO.HIGH if error_pin else GPIO.LOW)
+
+    print("Error signal sent!")
 
 def main() -> int:
     args = parse_args()
 
-    print("Initializing capture pin testing...")
+    print("Initializing capture + reset + error pins testing...")
     init_gpio_pins()
 
     try:
-        set_recipe_bits(args.code)
+        send_capture_signal()
+        send_reset_signal()
+        send_error_signal()
 
     except KeyboardInterrupt:
         print("\nStopped by user.")
