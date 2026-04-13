@@ -30,9 +30,9 @@ def parse_args() -> argparse.Namespace:
 
 
 def set_recipe_bits(code: int) -> None:
-    bit2_pin = DIGITAL_OUTPUTS_FROM_PI_TO_FANUC["RECIPE_BIT_2"]
-    bit1_pin = DIGITAL_OUTPUTS_FROM_PI_TO_FANUC["RECIPE_BIT_1"]
-    bit0_pin = DIGITAL_OUTPUTS_FROM_PI_TO_FANUC["RECIPE_BIT_0"]
+    bit2_pin = DIGITAL_OUTPUTS_FROM_PI_TO_FANUC["CAPTURE_DONE"]
+    # bit1_pin = DIGITAL_OUTPUTS_FROM_PI_TO_FANUC["RECIPE_BIT_1"]
+    # bit0_pin = DIGITAL_OUTPUTS_FROM_PI_TO_FANUC["RECIPE_BIT_0"]
 
     bit2 = (code >> 2) & 1
     bit1 = (code >> 1) & 1

@@ -10,7 +10,7 @@ DIGITAL_OUTPUTS_FROM_FANUC_TO_PI = {
 }
 
 DIGITAL_OUTPUTS_FROM_PI_TO_FANUC = {
-    "CAPTURE_DONE": 22,         
+    "CAPTURE_DONE": 5,         
     "ERROR_SIGNAL": 23,  
     "RESET_SIGNAL": 24,
     
