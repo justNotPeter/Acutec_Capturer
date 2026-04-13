@@ -14,7 +14,7 @@ DIGITAL_OUTPUTS_FROM_PI_TO_FANUC = {
     "ERROR_SIGNAL": 23,  
     "RESET_SIGNAL": 24,
     
-    "RECIPE_BIT_2": 25,
-    "RECIPE_BIT_1": 26,
-    "RECIPE_BIT_0": 27,       
+    "RECIPE_BIT_2": 26,
+    "RECIPE_BIT_1": 13,
+    "RECIPE_BIT_0": 6,       
 }
