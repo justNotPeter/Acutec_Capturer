@@ -23,7 +23,6 @@ class FanucState(Enum):
     SEQUENCE_DONE = auto()
     AT_INITIAL_POSITION = auto()
 
-
 class RoboDKFanuc:
     def __init__(self, max_views_for_demo: int = 3):
         self.RDK = robolink.Robolink()

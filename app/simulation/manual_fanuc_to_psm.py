@@ -3,8 +3,8 @@ import time
 
 os.environ["PI_SIM"] = "1"
 
-from app.state_machine import PiOrchestrator, State
-from app.communication_interface.pi_io import fanuc, GPIO
+from app.state_machine import PiOrchestrator
+from app.handshake_interface.pi_io import fanuc, GPIO
 from app.config.digital_io import DIGITAL_INPUTS_FROM_FANUC
 from app.config.gpio_setup import init_gpio_pins
 
@@ -24,7 +24,6 @@ def fake_check_quality(metrics):
 
 
 def set_pin(name: str, high: bool):
-    """Helper to set a simulated input pin from Fanuc to Pi."""
     pin = DIGITAL_INPUTS_FROM_FANUC[name]
     GPIO.output(pin, GPIO.HIGH if high else GPIO.LOW)
     print(f"[SIM] {name} set to {'HIGH' if high else 'LOW'} (pin {pin})")

@@ -20,13 +20,11 @@ LOG_PATH = os.path.join(LOG_DIR, "simulation.txt")
 
 
 def log_line(log_file, text: str) -> None:
-    """Write a single line to the simulation log and flush."""
     log_file.write(text + "\n")
     log_file.flush()
 
 
 def set_conveyor_part_present(high: bool, log_file=None):
-    """Simulate conveyor telling Fanuc a part is present / not present."""
     pin = DIGITAL_OUTPUTS_FROM_CONVEYOR_TO_FANUC["PD_CONVEYOR_STOPPED"]
     GPIO.output(pin, GPIO.HIGH if high else GPIO.LOW)
 

@@ -19,7 +19,6 @@ class PiIOInterface:
         self.digital_io_from_fanuc_to_pi = DIGITAL_OUTPUTS_FROM_FANUC_TO_PI
         self.digital_io_from_pi_to_fanuc = DIGITAL_OUTPUTS_FROM_PI_TO_FANUC
             
-    
     # Pi sends to Fanuc
     def set_capture_done(self, high: bool):
         try:
@@ -78,7 +77,7 @@ class PiIOInterface:
             print(f"Failed to send RESET_SEQUENCE: {e}")
             self.send_error_signal()
             
-    def clear_reset_signal(cls):
+    def clear_reset_signal(self):
         try:
             pin = DIGITAL_OUTPUTS_FROM_PI_TO_FANUC["RESET_SIGNAL"]
             GPIO.output(pin, GPIO.LOW)
@@ -86,7 +85,7 @@ class PiIOInterface:
             
         except Exception as e:
             print(f"Failed to clear RESET_SIGNAL: {e}")
-            cls.send_error_signal()
+            self.send_error_signal()
         
     def send_error_signal(self):
         try:
@@ -98,7 +97,6 @@ class PiIOInterface:
             
         except Exception as e:
             print(f"Could not send ERROR signal: {e}")
-            
 
     # Pi reads Fanuc
     def report_connection_alive_status(self) -> bool:
@@ -112,15 +110,6 @@ class PiIOInterface:
             print(f"Failed reading HEARTBEAT: {e}")
             self.is_connected = False
             return False
-        
-    # def is_recipe_confirmed(self) -> bool:
-    #     try:
-    #         pin = self.digital_io_from_fanuc_to_pi["RECIPE_CONFIRMED"]
-    #         status = GPIO.input(pin)
-    #         return status == GPIO.HIGH
-    #     except Exception as e:
-    #         print(f"Failed reading RECIPE_CONFIRMED: {e}")
-    #         return False
     
     def is_robot_ack(self) -> bool:
         try:
@@ -143,7 +132,7 @@ class PiIOInterface:
             self.is_in_position_for_capture = False
             return False
         
-    def is_every_part_view_capured(self) -> bool:
+    def is_every_part_view_captured(self) -> bool:
         try:
             pin = self.digital_io_from_fanuc_to_pi["PART_SEQUENCE_DONE"]
             status = GPIO.input(pin)
@@ -157,7 +146,6 @@ class PiIOInterface:
             self.part_sequence_done = False
             return False
     
-
     def cleanup(self):
         try:
             GPIO.cleanup()

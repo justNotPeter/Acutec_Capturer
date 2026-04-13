@@ -33,14 +33,14 @@ class PiState(Enum):
     ERROR = auto()
     
 class PiStateMachine:
-    def __init__(self):
+    def __init__(self, test_mode: bool = False):
         self.camera = camera
         self.io = PiCapturerIOInterface
         self.current_state = PiState.WAITING_FOR_PART
         self.current_part = {
             "part_id": None,
             "part_type": None,
-            "view_index": 0,
+            "view_index": -1,
             "sharpness": 0,
             "brightness": 0,
             "contrast": 0,
@@ -64,24 +64,21 @@ class PiStateMachine:
             PiState.ERROR: self._handle_error,
         }
         
+        self.test_mode = test_mode
+        
     def init_pi_capturer_system(self):
         self.camera.init_camera()
         print(f"System started! Current state is {self.current_state}")
         
-        
     def _start_new_inspection(self, part_id: str, part_type: str):
         self.inspection_event += 1
-        
-        # qr_scanned_utc_time = datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace("+00:00", "Z")
         
         self.current_part.update({
             "part_id": part_id,
             "part_type": part_type 
         })
         
-        print(f"[Pi] inspection event counts: {self.inspection_event}!")
-        
-        print(f"[Pi] Started new inspection for part {self.current_part.get('part_id', 'N/A')}")
+        print(f"Started new inspection for part {self.current_part.get('part_id', 'N/A')}!")
         
     def step_once(self):
         health_state = self.check_robot_health()
@@ -99,13 +96,31 @@ class PiStateMachine:
         if next_state is not None and next_state != self.current_state:
             print(f"Transition from {self.current_state} -> {next_state}")
             self.current_state = next_state
+            
+    def run_test_mode(self, runtime_config: object) -> PiState:
+        self.init_pi_capturer_system()
+        self._reset_current_part()
+         
+        test_part_id = runtime_config["part_id"]
+        test_part_type = runtime_config["part_type"]
+        test_view_index = runtime_config["view_index"]
         
+        self._start_new_inspection(test_part_id, test_part_type)
+        
+        self.current_part.update({
+            "view_index": self.current_part[test_view_index]
+        })
+        
+        return self._handle_capturing_object_view()
+          
     def automate_sequence(self):
         print("Automating PSM sequence...")
         
+        if self.test_mode:
+            return self.run_test_mode()
+        
         while True:
             self.step_once()
-            
                  
     def check_robot_health(self):
         if not self.io.report_connection_alive_status():
@@ -123,7 +138,6 @@ class PiStateMachine:
             "contrast": 0,
             "captured_at": None
         }
-    
               
     def _handle_waiting_for_part(self):
         print("Waiting for new part to arrive")
@@ -134,7 +148,6 @@ class PiStateMachine:
         
         time.sleep(0.02)
         return 
-    
     
     def _handle_scanning_for_qr_code(self):
         print("Sanning for QR code!")
@@ -165,7 +178,6 @@ class PiStateMachine:
         
         return PiState.SENDING_RECIPE
     
-    
     def _handle_sending_recipe(self):
         part_type = self.current_part["part_type"]
         
@@ -187,7 +199,6 @@ class PiStateMachine:
             return PiState.WAITING_FOR_ROBOT_POSE
         return None
     
-        
     def _handle_waiting_for_robot_pose(self) -> PiState | None:
         print("Checking pose and sequence status...")
 
@@ -225,12 +236,14 @@ class PiStateMachine:
             time.sleep(0.05)
             
         if not qc_pass:
-            print("[PI] ❌ Max retries reached for this view. Going to ERROR.")
+            print("Max retries reached for this view. Going to ERROR!")
             self.io.send_error_signal()
             return PiState.ERROR
+        
+        current_view_index = self.current_part["view_index"]
                 
         self.current_part.update({
-            "view_index": self.current_part["view_index"] + 1, 
+            "view_index": current_view_index + 1, 
             "qc_sharpness": frame_metrics["sharpness"],
             "qc_brightness": frame_metrics["brightness"],
             "qc_contrast": frame_metrics["contrast"],
@@ -239,7 +252,10 @@ class PiStateMachine:
         
         jpeg_frame = encode_to_jpeg(frame)
         
-        # dispatch_to_jetson(jpeg_frame, self.current_part)
+        dispatch_to_jetson(jpeg_frame, self.current_part)
+        
+        if self.test_mode:
+            return PiState.DONE
 
         self.io.set_capture_done(True)
         return PiState.WAITING_FOR_CAPTURE_ACK
@@ -257,7 +273,6 @@ class PiStateMachine:
         
         return PiState.WAITING_FOR_PART
     
-    
     def _handle_waiting_for_capture_ack(self) -> PiState | None:
         if self.io.is_robot_ack():
             print("Robot acknowledged CAPTURE_DONE, waiting for next pose…")
@@ -266,14 +281,12 @@ class PiStateMachine:
             return PiState.WAITING_FOR_ROBOT_POSE
         return None
     
-    
     def _handle_error(self) -> None | PiState:
         print("ERROR: Staying in error for now!")
         
         self.io.send_error_signal()
         time.sleep(0.5)
         return
-    
     
     def handle_reset_state(self):
         return PiState.WAITING_FOR_PART
