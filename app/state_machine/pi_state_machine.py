@@ -3,6 +3,7 @@ import cv2
 
 from datetime import datetime, timezone
 import numpy as np
+import time
 from enum import Enum, auto
 from app.hardware.camera import camera
 from app.handshake_interface.pi_io import PiCapturerIOInterface
@@ -121,10 +122,23 @@ class PiStateMachine:
             self.step_once()
                  
     def check_robot_health(self):
-        if not self.io.report_connection_alive_status():
-            print("❌ No heartbeat from Fanuc!")
-            return PiState.ERROR
-        return
+        # i = 0
+        # while i < 5 and not self.io.report_connection_alive_status():
+        #     print("❌ No heartbeat from Fanuc!")
+        #     i = i + 1
+        #     time.sleep(5000)
+        # if i == 5:
+        #     return PiState.ERROR
+        # else:
+        #     return
+        
+        for i in range(0,5):
+            if not self.io.report_connection_alive_status():
+                print("❌ No heartbeat from Fanuc after tries ", i)
+                time.sleep(2000)
+            else:
+                return
+        return PiState.ERROR
     
     def _reset_current_part(self):
         self.current_part = {
@@ -284,7 +298,6 @@ class PiStateMachine:
         print("ERROR: Staying in error for now!")
         
         self.io.send_error_signal()
-        time.sleep(0.5)
         exit(1)
     
     def handle_reset_state(self):
