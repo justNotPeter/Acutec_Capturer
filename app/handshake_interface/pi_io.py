@@ -66,12 +66,17 @@ class PiIOInterface:
             self.send_error_signal()
             return False
         
-    def send_reset_signal(self):
+    def send_reset_signal(self, pulse_seconds: float = 0.1):
         try:
             pin = self.digital_io_from_pi_to_fanuc["RESET_SIGNAL"]
             GPIO.output(pin, GPIO.HIGH)
-            
             print(f"RESET signal sent!")
+            
+            time.sleep(pulse_seconds)
+            
+            GPIO.output(pin, GPIO.LOW)
+            print(f"RESET signal cleared")
+            
             
         except Exception as e:
             print(f"Failed to send RESET_SEQUENCE: {e}")

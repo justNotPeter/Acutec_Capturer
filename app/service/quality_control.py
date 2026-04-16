@@ -2,10 +2,7 @@ import cv2
 import numpy as np
 from typing import Optional, Dict
 
-def compute_qc_metrics(
-    frame: np.ndarray, 
-    simulated_result: Optional[Dict[str, int]] = None
-) -> dict:
+def compute_qc_metrics(frame: np.ndarray, simulated_result: Optional[Dict[str, int]] = None) -> dict:
     
     if simulated_result:
         return simulated_result

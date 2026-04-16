@@ -3,10 +3,7 @@ import numpy as np
 from typing import Optional, Tuple, Dict
 from app.config.part_recipe import PART_TYPE_TO_RECIPE_CODE
 
-def decode_qr_code(
-    frame: np.ndarray,
-    simulated_result: Optional[Dict[str, str]] = None
-) -> Tuple[Optional[Dict[str, str]], Optional[np.ndarray]]:
+def decode_qr_code(frame: np.ndarray, simulated_result: Optional[Dict[str, str]] = None) -> Tuple[Optional[Dict[str, str]], Optional[np.ndarray]]:
 
     if simulated_result is not None:
         return simulated_result, None

@@ -18,21 +18,21 @@ Primary references:
 
 | Signal | BCM Pin | Direction at Pi | Purpose |
 | --- | ---: | --- | --- |
-| `HEARTBEAT` | 11 | Input | Robot alive / health signal |
-| `ROBOT_IN_POSITION_FOR_CAPTURE` | 12 | Input | Robot is at QR or image capture pose |
-| `PART_SEQUENCE_DONE` | 13 | Input | Robot says all views for current part are complete |
-| `ACKNOWLEDGEMENT` | 14 | Input | Robot acknowledges recipe receipt or capture completion |
+| `HEARTBEAT` | 23 | Input | Robot alive / health signal |
+| `ROBOT_IN_POSITION_FOR_CAPTURE` | 24 | Input | Robot is at QR or image capture pose |
+| `PART_SEQUENCE_DONE` | 12 | Input | Robot says all views for current part are complete |
+| `ACKNOWLEDGEMENT` | 25 | Input | Robot acknowledges recipe receipt or capture completion |
 
 ### Pi outputs to robot
 
 | Signal | BCM Pin | Direction at Pi | Purpose |
 | --- | ---: | --- | --- |
-| `CAPTURE_DONE` | 22 | Output | Pi says image capture for current view is complete |
-| `ERROR_SIGNAL` | 23 | Output | Pi pulses error to robot |
-| `RESET_SIGNAL` | 24 | Output | Pi requests robot to reset sequence |
-| `RECIPE_BIT_2` | 25 | Output | Recipe code bit 2 |
-| `RECIPE_BIT_1` | 26 | Output | Recipe code bit 1 |
-| `RECIPE_BIT_0` | 27 | Output | Recipe code bit 0 |
+| `CAPTURE_DONE` | 5 | Output | Pi says image capture for current view is complete |
+| `ERROR_SIGNAL` | 27 | Output | Pi pulses error to robot |
+| `RESET_SIGNAL` | 22 | Output | Pi requests robot to reset sequence |
+| `RECIPE_BIT_2` | 6 | Output | Recipe code bit 2 |
+| `RECIPE_BIT_1` | 13 | Output | Recipe code bit 1 |
+| `RECIPE_BIT_0` | 26 | Output | Recipe code bit 0 |
 
 ### Conveyor input used by robot side
 
@@ -178,16 +178,16 @@ It:
 Pi sends signals in `app/handshake_interface/pi_io.py`.
 
 - `send_required_recipe(part_type)`
-  Sends recipe on pins `25`, `26`, `27`.
+  Sends recipe on pins `6`, `13`, `26`.
 
 - `set_capture_done(high)`
-  Sends capture completion on pin `22`.
+  Sends capture completion on pin `5`.
 
 - `send_reset_signal()`
-  Sends reset on pin `24`.
+  Sends reset on pin `22`.
 
 - `send_error_signal()`
-  Pulses error on pin `23`.
+  Pulses error on pin `27`.
 
 ### 5. When signals are read from the robot
 

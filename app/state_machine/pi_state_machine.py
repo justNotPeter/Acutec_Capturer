@@ -107,9 +107,7 @@ class PiStateMachine:
         
         self._start_new_inspection(test_part_id, test_part_type)
         
-        self.current_part.update({
-            "view_index": self.current_part[test_view_index]
-        })
+        self.current_part.update({"view_index": test_view_index})
         
         return self._handle_capturing_object_view()
           
@@ -157,7 +155,8 @@ class PiStateMachine:
         
         while not qr_code_data and qr_retry_count <= self.max_qr_tries:
             frame, capture_time = self.camera.capture_frame()
-            qr_code_data, bbox = decode_qr_code(frame, simulated_result={"part_id": "SIM_001","part_type": "A_001_PLATE"})
+            # qr_code_data, bbox = decode_qr_code(frame, simulated_result={"part_id": "SIM_001","part_type": "A_001_PLATE"})
+            qr_code_data, bbox = decode_qr_code(frame)
             
             if qr_code_data:
                 print(f"QR Code Detected: {qr_code_data}")
@@ -193,7 +192,6 @@ class PiStateMachine:
         return PiState.WAITING_FOR_RECIPE_CONFIRMATION
     
     def _handle_waiting_for_recipe_confirmation(self):
-        # if self.io.is_recipe_confirmed():
         if self.io.is_robot_ack():
             print("Robot confirmed recipe!")
             return PiState.WAITING_FOR_ROBOT_POSE
@@ -202,7 +200,7 @@ class PiStateMachine:
     def _handle_waiting_for_robot_pose(self) -> PiState | None:
         print("Checking pose and sequence status...")
 
-        if self.io.is_every_part_view_capured():
+        if self.io.is_every_part_view_captured():
             print("✅ Part sequence done. All views captured!")
             time.sleep(0.1)
             return PiState.DONE
@@ -224,7 +222,8 @@ class PiStateMachine:
         while num_try < self.max_capture_tries and not qc_pass:
             frame, captured_time = self.camera.capture_frame()
             
-            frame_metrics = compute_qc_metrics(frame, simulated_result={"sharpness": 110, "brightness": 70, "contrast": 30})
+            # frame_metrics = compute_qc_metrics(frame, simulated_result={"sharpness": 110, "brightness": 70, "contrast": 30})
+            frame_metrics = compute_qc_metrics(frame)
             qc_pass = check_quality(frame_metrics)
             
             if qc_pass:
@@ -252,7 +251,7 @@ class PiStateMachine:
         
         jpeg_frame = encode_to_jpeg(frame)
         
-        dispatch_to_jetson(jpeg_frame, self.current_part)
+        # dispatch_to_jetson(jpeg_frame, self.current_part)
         
         if self.test_mode:
             return PiState.DONE
