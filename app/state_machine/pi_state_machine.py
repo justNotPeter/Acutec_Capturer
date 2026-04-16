@@ -126,7 +126,7 @@ class PiStateMachine:
         # while i < 5 and not self.io.report_connection_alive_status():
         #     print("❌ No heartbeat from Fanuc!")
         #     i = i + 1
-        #     time.sleep(5000)
+        #     time.sleep(5)
         # if i == 5:
         #     return PiState.ERROR
         # else:
@@ -135,7 +135,7 @@ class PiStateMachine:
         for i in range(0,5):
             if not self.io.report_connection_alive_status():
                 print("❌ No heartbeat from Fanuc after tries ", i)
-                time.sleep(2000)
+                time.sleep(2)
             else:
                 return
         return PiState.ERROR
