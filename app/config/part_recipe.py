@@ -5,7 +5,7 @@ PART_TYPE_TO_RECIPE_CODE = {
     "A_002_BALL":  0b010,  
     "A_003_ANGLE": 0b011,   
     "A_004_MOUNT": 0b101,
-    "A_005_CAST":  0b110,
+    "A_005_CAST_PLT":  0b110,
 }
 
 RECIPE_CODE_TO_PART_TYPE = {
@@ -13,5 +13,5 @@ RECIPE_CODE_TO_PART_TYPE = {
     0b010: "A_002_BALL",
     0b011: "A_003_ANGLE",
     0b101: "A_004_MOUNT",
-    0b110: "A_005_CAST",
+    0b110: "A_005_CAST_PLT",
 }

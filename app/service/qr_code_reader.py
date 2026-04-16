@@ -1,3 +1,4 @@
+import json
 import cv2
 import numpy as np
 from typing import Optional, Tuple, Dict
@@ -15,10 +16,15 @@ def decode_qr_code(frame: np.ndarray, simulated_result: Optional[Dict[str, str]]
         return None, None
 
     try:
-        part_id, part_type = data.split("|", 1)
+        if data.lstrip().startswith("{"):
+            payload = json.loads(data)
+            part_id = str(payload["part_id"]).strip()
+            part_type = str(payload["part_type"]).strip()
+        else:
+            part_id, part_type = data.split("|", 1)
+            part_id = part_id.strip()
+            part_type = part_type.strip()
 
-        part_id = part_id.strip()
-        part_type = part_type.strip()
 
         if part_type not in PART_TYPE_TO_RECIPE_CODE:
             print(f"[Unknown part_type '{part_type}'. No recipe available!")
@@ -30,7 +36,6 @@ def decode_qr_code(frame: np.ndarray, simulated_result: Optional[Dict[str, str]]
         }
 
         return decoded_object, bbox
-
-    except ValueError:
+    except (ValueError, KeyError, json.JSONDecodeError):
         print(f"Format issue. Data = '{data}'")
         return None, None
