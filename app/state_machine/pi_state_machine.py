@@ -89,7 +89,7 @@ class PiStateMachine:
                 print(f"Please check Fanuc for connection, system is in ERROR state!")
                 
             self.current_state = health_state
-            return
+            # return
 
         handler = self.function_handler[self.current_state]
         next_state = handler()
