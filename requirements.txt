@@ -3,3 +3,4 @@ sqlite-utils
 opencv-python
 robodk
 requests
+qrcode[pil]

@@ -3,3 +3,4 @@ python-dotenv
 opencv-python
 picamera2
 RPi.GPIO
+qrcode[pil]

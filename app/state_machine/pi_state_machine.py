@@ -285,7 +285,7 @@ class PiStateMachine:
         
         self.io.send_error_signal()
         time.sleep(0.5)
-        return
+        exit(1)
     
     def handle_reset_state(self):
         return PiState.WAITING_FOR_PART
