@@ -14,4 +14,4 @@ RECIPE_CODE_TO_PART_TYPE = {
     0b011: "A_003_ANGLE",
     0b101: "A_004_MOUNT",
     0b110: "A_005_CAST_PLT",
-}
+} 
