@@ -48,7 +48,7 @@ def draw_section(stdscr, start_row: int, title: str, items: list[str]) -> int:
 def draw_screen(stdscr, log_buffer: deque[str]) -> None:
     stdscr.erase()
 
-    header = "Acutec Pi State Machine TUI  |  q: quit"
+    header = "Acutec Pi State Machine!"
     stdscr.addstr(0, 0, header, curses.A_REVERSE)
 
     state = getattr(PiOrchestrator.current_state, "name", str(PiOrchestrator.current_state))
@@ -64,7 +64,7 @@ def draw_screen(stdscr, log_buffer: deque[str]) -> None:
             f"Part ID       : {current_part.get('part_id')}",
             f"Part Type     : {current_part.get('part_type')}",
             f"View Index    : {current_part.get('view_index')}",
-            f"Captured At   : {current_part.get('captured_at')}",
+            f"Captured UTC  : {current_part.get('captured_time_utc')}",
         ],
     )
 

@@ -45,7 +45,7 @@ class PiStateMachine:
             "sharpness": 0,
             "brightness": 0,
             "contrast": 0,
-            "captured_at": None
+            "captured_time_utc": None
         }
         self.inspection_event = 0
         self.max_qr_tries = 3
@@ -148,7 +148,7 @@ class PiStateMachine:
             "sharpness": 0,
             "brightness": 0,
             "contrast": 0,
-            "captured_at": None
+            "captured_time_utc": None
         }
               
     def _handle_waiting_for_part(self):
@@ -260,7 +260,7 @@ class PiStateMachine:
             "qc_sharpness": frame_metrics["sharpness"],
             "qc_brightness": frame_metrics["brightness"],
             "qc_contrast": frame_metrics["contrast"],
-            "captured_at": captured_time 
+            "captured_time_utc": captured_time 
         })
         
         jpeg_frame = encode_to_jpeg(frame)

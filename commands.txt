@@ -1,0 +1,6 @@
+python3 -m app.test.test_send_image_to_server \
+    --image '/Users/me.peter/Acutec_Final/datasets/patchcore/A_005_CAST_PLT/cropped/top/folder predict for 5 dots/IMG_4073.jpg' \
+    --part-id PART-12345 \
+    --part-type A_005_CAST_PLT \
+    --view-index 0 \
+    --captured-time-utc 2026-04-16T14:22:31Z

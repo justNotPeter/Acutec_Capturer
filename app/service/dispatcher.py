@@ -1,13 +1,21 @@
 import os
+import json
 import requests
 
 JETSON_URL = os.getenv("JETSON_URL")  # e.g. "http://<jetson-ip>:8000/api/views/ingest"
 
 def dispatch_to_jetson(jpeg_frame: bytes, current_part_metadata: dict) -> None:
-    files = {"image": ("frame.jpg", jpeg_frame, "image/jpeg")}
+    files = {
+        "image": ("frame.jpg", jpeg_frame, "image/jpeg"),
+        "current_view_metadata": (
+            None,
+            json.dumps(current_part_metadata),
+            "application/json",
+        ),
+    }
 
     try:
-        resp = requests.post(JETSON_URL, data=current_part_metadata, files=files, timeout=10)
+        resp = requests.post(JETSON_URL, files=files, timeout=10)
         resp.raise_for_status()
         
     except Exception as e:

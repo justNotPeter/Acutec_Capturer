@@ -56,6 +56,13 @@ def init_gpio_pins() -> None:
         GPIO.setup(DIGITAL_OUTPUTS_FROM_PI_TO_FANUC["RECIPE_BIT_1"], GPIO.OUT)
         GPIO.setup(DIGITAL_OUTPUTS_FROM_PI_TO_FANUC["RECIPE_BIT_0"], GPIO.OUT)
 
+        GPIO.output(DIGITAL_OUTPUTS_FROM_PI_TO_FANUC["RESET_SIGNAL"], GPIO.LOW)
+        GPIO.output(DIGITAL_OUTPUTS_FROM_PI_TO_FANUC["CAPTURE_DONE"], GPIO.LOW)
+        GPIO.output(DIGITAL_OUTPUTS_FROM_PI_TO_FANUC["ERROR_SIGNAL"], GPIO.LOW)
+        GPIO.output(DIGITAL_OUTPUTS_FROM_PI_TO_FANUC["RECIPE_BIT_2"], GPIO.LOW)
+        GPIO.output(DIGITAL_OUTPUTS_FROM_PI_TO_FANUC["RECIPE_BIT_1"], GPIO.LOW)
+        GPIO.output(DIGITAL_OUTPUTS_FROM_PI_TO_FANUC["RECIPE_BIT_0"], GPIO.LOW)
+
         _initialized = True
         print("GPIO initialized successfully (gpio_setup.init_gpio_pins).")
 
