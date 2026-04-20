@@ -192,6 +192,22 @@ class PiStateMachine:
             print("❌ Could not send recipe to Fanuc!")
             return PiState.ERROR
         
+        time.sleep(3)
+        
+        capture_done = self.io.set_capture_done(True)
+        
+        if not capture_done:
+            print("❌ Could not send capture done after sending recipe bit codes to Fanuc!")
+            return PiState.ERROR
+        
+        time.sleep(5)
+        
+        reset_capture_done = self.io.set_capture_done(False)
+        
+        if not reset_capture_done:
+            print("❌ Could not reset capture done after sending recipe bit codes to Fanuc!")
+            return PiState.ERROR
+        
         print("Waiting for robot to move to capture pose…")
         return PiState.WAITING_FOR_RECIPE_CONFIRMATION
     
