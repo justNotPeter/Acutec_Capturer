@@ -192,7 +192,7 @@ class PiStateMachine:
             print("❌ Could not send recipe to Fanuc!")
             return PiState.ERROR
         
-        time.sleep(3)
+        time.sleep(1)
         
         capture_done = self.io.set_capture_done(True)
         
@@ -200,7 +200,7 @@ class PiStateMachine:
         #     print("❌ Could not send capture done after sending recipe bit codes to Fanuc!")
         #     return PiState.ERROR
         
-        time.sleep(5)
+        time.sleep(1)
         
         reset_capture_done = self.io.set_capture_done(False)
         
