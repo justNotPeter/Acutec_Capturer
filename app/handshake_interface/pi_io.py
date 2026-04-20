@@ -20,17 +20,19 @@ class PiIOInterface:
         self.digital_io_from_pi_to_fanuc = DIGITAL_OUTPUTS_FROM_PI_TO_FANUC
             
     # Pi sends to Fanuc
-    def set_capture_done(self, high: bool):
+    def set_capture_done(self, high: bool) -> bool:
         try:
             pin = self.digital_io_from_pi_to_fanuc["CAPTURE_DONE"]
             output_state = GPIO.HIGH if high else GPIO.LOW
-            
+
             GPIO.output(pin, output_state)
             print(f"SEND CAPTURE_DONE: {'HIGH' if high else 'LOW'}")
+            return True
 
         except Exception as e:
             print(f"Failed to set CAPTURE_DONE: {e}")
             self.send_error_signal()
+            return False
 
     def send_required_recipe(self, part_type: str) -> bool:
         try:
