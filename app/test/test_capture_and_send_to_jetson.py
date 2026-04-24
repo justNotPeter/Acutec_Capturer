@@ -47,6 +47,16 @@ def parse_args() -> argparse.Namespace:
         default=92,
         help="JPEG quality for upload encoding.",
     )
+    parser.add_argument(
+        "--width",
+        type=int,
+        help="Optional camera width override for this run.",
+    )
+    parser.add_argument(
+        "--height",
+        type=int,
+        help="Optional camera height override for this run.",
+    )
     return parser.parse_args()
 
 
@@ -61,6 +71,12 @@ def main() -> int:
     args = parse_args()
 
     try:
+        if (args.width is None) != (args.height is None):
+            raise RuntimeError("Both --width and --height must be provided together.")
+
+        if args.width is not None and args.height is not None:
+            camera.set_resolution(args.width, args.height)
+
         camera.init_camera()
         frame, captured_time_utc = camera.capture_frame()
 

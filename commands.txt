@@ -4,3 +4,12 @@ python3 -m app.test.test_send_image_to_server \
     --part-type A_005_CAST_PLT \
     --view-index 0 \
     --captured-time-utc 2026-04-16T14:22:31Z
+
+
+
+
+python3 -m app.test.test_capture_and_send_to_jetson \
+  --part-id A005 \
+  --part-type A_005_CAST_PLT \
+  --view-index 0 \
+  --inspection-key A005_20260423T154210.382Z

@@ -2,7 +2,9 @@ import os
 import json
 import requests
 
-JETSON_URL = os.getenv("JETSON_URL")  # e.g. "http://<jetson-ip>:8000/api/views/ingest"
+JETSON_URL = os.getenv("JETSON_URL")  
+
+# print("Jetson_URL is: ")
 
 def dispatch_to_jetson(jpeg_frame: bytes, current_part_metadata: dict) -> None:
     files = {
