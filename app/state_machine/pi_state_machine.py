@@ -9,6 +9,7 @@ from app.hardware.camera import camera
 from app.handshake_interface.pi_io import PiCapturerIOInterface
 from app.service.qr_code_reader import decode_qr_code
 from app.service.quality_control import compute_qc_metrics, check_quality
+from app.service.session_key_generator import generate_inspection_key
 
 def encode_to_jpeg(frame: np.ndarray, quality: int = 92) -> bytes:
     encode_params = [int(cv2.IMWRITE_JPEG_QUALITY), quality]
@@ -41,6 +42,7 @@ class PiStateMachine:
         self.current_part = {
             "part_id": None,
             "part_type": None,
+            "inspection_key": None,
             "view_index": -1,
             "sharpness": 0,
             "brightness": 0,
@@ -76,7 +78,8 @@ class PiStateMachine:
         
         self.current_part.update({
             "part_id": part_id,
-            "part_type": part_type 
+            "part_type": part_type,
+            "inspection_key": None,
         })
         
         print(f"Started new inspection for part {self.current_part.get('part_id', 'N/A')}!")
@@ -134,6 +137,7 @@ class PiStateMachine:
         self.current_part = {
             "part_id": None,
             "part_type": None,
+            "inspection_key": None,
             "view_index": 0,
             "sharpness": 0,
             "brightness": 0,
@@ -259,6 +263,12 @@ class PiStateMachine:
             self.io.send_error_signal()
             return PiState.ERROR
         
+        if self.current_part.get("inspection_key") is None:
+            self.current_part["inspection_key"] = generate_inspection_key(
+                self.current_part["part_id"],
+                captured_time,
+            )
+
         current_view_index = self.current_part["view_index"]
                 
         self.current_part.update({

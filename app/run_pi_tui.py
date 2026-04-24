@@ -63,6 +63,7 @@ def draw_screen(stdscr, log_buffer: deque[str]) -> None:
             f"Current State : {state}",
             f"Part ID       : {current_part.get('part_id')}",
             f"Part Type     : {current_part.get('part_type')}",
+            f"Inspect Key   : {current_part.get('inspection_key')}",
             f"View Index    : {current_part.get('view_index')}",
             f"Captured UTC  : {current_part.get('captured_time_utc')}",
         ],
