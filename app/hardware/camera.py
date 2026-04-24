@@ -18,6 +18,7 @@ class Camera:
         self.source = CAMERA_SOURCE
         self.cap = None
         self.resolution = DEFAULT_CAMERA_CONFIG["resolution"]
+        self.fourcc = DEFAULT_CAMERA_CONFIG.get("fourcc")
         self.exposure_us = DEFAULT_CAMERA_CONFIG["exposure_us"]
         self.gain = DEFAULT_CAMERA_CONFIG["gain"]
 
@@ -25,7 +26,10 @@ class Camera:
         if self.cap is not None:
             return 
 
-        self.cap = cv2.VideoCapture(self.source)
+        self.cap = cv2.VideoCapture(self.source, cv2.CAP_V4L2)
+
+        if not self.cap.isOpened():
+            self.cap = cv2.VideoCapture(self.source)
 
         if not self.cap.isOpened():
             self.cap = None
@@ -38,6 +42,9 @@ class Camera:
     def apply_settings(self):
         if self.cap is None:
             return
+
+        if self.fourcc:
+            self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*self.fourcc))
 
         w, h = self.resolution
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, w)

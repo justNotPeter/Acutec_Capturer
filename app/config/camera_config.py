@@ -5,7 +5,8 @@
 # }
 
 DEFAULT_CAMERA_CONFIG = {
-    "resolution": (3120, 4208), 
+    "resolution": (4208, 3120),
+    "fourcc": "MJPG",
     "exposure_us": None,       
     "gain": None              
 }
