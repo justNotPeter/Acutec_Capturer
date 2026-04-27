@@ -162,9 +162,14 @@ class PiStateMachine:
         qr_code_data = None
         
         while not qr_code_data and qr_retry_count <= self.max_qr_tries:
-            frame, capture_time = self.camera.capture_frame()
-            # qr_code_data, bbox = decode_qr_code(frame, simulated_result={"part_id": "SIM_001","part_type": "A_001_PLATE"})
-            qr_code_data, bbox = decode_qr_code(frame)
+            try:
+                frame, capture_time = self.camera.capture_frame()
+                print(f"Captured QR frame at {capture_time} with shape={frame.shape}")
+                # qr_code_data, bbox = decode_qr_code(frame, simulated_result={"part_id": "SIM_001","part_type": "A_001_PLATE"})
+                qr_code_data, bbox = decode_qr_code(frame)
+            except Exception as exc:
+                print(f"❌ QR scan capture/decode error: {exc}")
+                return PiState.ERROR
             
             if qr_code_data:
                 print(f"QR Code Detected: {qr_code_data}")

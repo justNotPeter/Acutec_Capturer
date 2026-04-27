@@ -2,7 +2,6 @@ import os
 import cv2
 from dotenv import load_dotenv
 from datetime import datetime, timezone
-from typing import Tuple
 import numpy as np
 from app.config.camera_config import DEFAULT_CAMERA_CONFIG
 
@@ -12,13 +11,16 @@ if env_path and os.path.exists(env_path):
     load_dotenv(dotenv_path=env_path)
 
 CAMERA_SOURCE = int(os.getenv("CAMERA_SOURCE", "0"))
+CAMERA_WIDTH = int(os.getenv("CAMERA_WIDTH", str(DEFAULT_CAMERA_CONFIG["resolution"][0])))
+CAMERA_HEIGHT = int(os.getenv("CAMERA_HEIGHT", str(DEFAULT_CAMERA_CONFIG["resolution"][1])))
+CAMERA_FOURCC = os.getenv("CAMERA_FOURCC", DEFAULT_CAMERA_CONFIG.get("fourcc") or "")
 
 class Camera:
     def __init__(self):
         self.source = CAMERA_SOURCE
         self.cap = None
-        self.resolution = DEFAULT_CAMERA_CONFIG["resolution"]
-        self.fourcc = DEFAULT_CAMERA_CONFIG.get("fourcc")
+        self.resolution = (CAMERA_WIDTH, CAMERA_HEIGHT)
+        self.fourcc = CAMERA_FOURCC or None
         self.exposure_us = DEFAULT_CAMERA_CONFIG["exposure_us"]
         self.gain = DEFAULT_CAMERA_CONFIG["gain"]
 
@@ -62,6 +64,8 @@ class Camera:
         actual_w = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         actual_h = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         print(f"Camera resolution applied: {actual_w}x{actual_h}")
+        if self.fourcc:
+            print(f"Camera fourcc requested: {self.fourcc}")
         
 
     def capture_frame(self) -> tuple[np.ndarray, str]:
@@ -71,6 +75,8 @@ class Camera:
         ret, frame = self.cap.read()
         if not ret:
             raise RuntimeError("❌ Failed to capture frame from camera!")
+        if frame is None or frame.size == 0:
+            raise RuntimeError("❌ Camera returned an empty frame!")
         
         capture_time_utc = datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace("+00:00", "Z")
 
