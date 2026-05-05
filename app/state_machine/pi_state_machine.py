@@ -173,6 +173,7 @@ class PiStateMachine:
             
             if qr_code_data:
                 print(f"QR Code Detected: {qr_code_data}")
+                self.camera.switch_to_inspection_mode()
                 break
             
             qr_retry_count += 1

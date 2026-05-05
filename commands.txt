@@ -20,7 +20,7 @@ python3 -m app.test.test_capture_and_send_training_to_jetson \
   --part-id A005 \
   --part-type A_005_CAST_PLT \
   --view-index 0 \
-  --inspection-key A005_top_train_20260424_batch01 \
+  --inspection-key test_after_config_camera \
   --count 150 \
   --delay-ms 500 \
   --show-preview \

@@ -3,7 +3,7 @@ import cv2
 from dotenv import load_dotenv
 from datetime import datetime, timezone
 import numpy as np
-from app.config.camera_config import DEFAULT_CAMERA_CONFIG
+from app.config.camera_config import DEFAULT_CAMERA_CONFIG, INSPECTION_CAMERA_CONFIG
 
 env_path = os.getenv("ENV_FILE", ".env.local")
 
@@ -92,6 +92,14 @@ class Camera:
             self.apply_settings()
             print(f"New resolution is set to {width}x{height}!")
             
+    def switch_to_inspection_mode(self):
+        width, height = INSPECTION_CAMERA_CONFIG["resolution"]
+        try:
+            self.set_resolution(width, height)
+        except Exception as exc:
+            raise RuntimeError(f"Failed to switch to inspection mode {width}x{height}: {exc}") from exc
+        print(f"Switched to inspection camera mode: {width}x{height}")
+
 
     def release(self):
         if self.cap:
