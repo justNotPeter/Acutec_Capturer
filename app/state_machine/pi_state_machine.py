@@ -7,6 +7,7 @@ import time
 from enum import Enum, auto
 from app.hardware.camera import camera
 from app.handshake_interface.pi_io import PiCapturerIOInterface
+from app.service.dispatcher import dispatch_to_jetson
 from app.service.qr_code_reader import decode_qr_code
 from app.service.quality_control import compute_qc_metrics, check_quality
 from app.service.session_key_generator import generate_inspection_key
@@ -287,7 +288,11 @@ class PiStateMachine:
         
         jpeg_frame = encode_to_jpeg(frame)
         
-        # dispatch_to_jetson(jpeg_frame, self.current_part)
+        result = dispatch_to_jetson(jpeg_frame, self.current_part)
+        print("The result object is: ", result)
+        
+        if result and result.get("is_defective"):
+            self.io.send_defective_signal()
         
         if self.test_mode:
             return PiState.DONE

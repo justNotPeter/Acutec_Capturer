@@ -105,6 +105,20 @@ class PiIOInterface:
         except Exception as e:
             print(f"Could not send ERROR signal: {e}")
 
+    def send_defective_signal(self, pulse_seconds: float = 0.1) -> bool:
+        try:
+            pin = self.digital_io_from_pi_to_fanuc["DEFECTIVE_SIGNAL"]
+            GPIO.output(pin, GPIO.HIGH)
+            time.sleep(pulse_seconds)
+            GPIO.output(pin, GPIO.LOW)
+            print(f"DEFECTIVE signal sent! pulse={pulse_seconds:.3f}s")
+            return True
+
+        except Exception as e:
+            print(f"Could not send DEFECTIVE signal: {e}")
+            self.send_error_signal()
+            return False
+
     # Pi reads Fanuc
     def report_connection_alive_status(self) -> bool:
         try:
