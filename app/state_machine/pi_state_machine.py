@@ -288,7 +288,7 @@ class PiStateMachine:
         
         jpeg_frame = encode_to_jpeg(frame)
         
-        result = dispatch_to_jetson(jpeg_frame, self.current_part)
+        result = dispatch_to_jetson(jpeg_frame, self.current_part, "http://100.100.108.27:8000/api/psm/upload-view")
         print("The result object is: ", result)
         
         if result and result.get("is_defective"):
