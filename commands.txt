@@ -20,8 +20,9 @@ python3 -m app.test.test_capture_and_send_training_to_jetson \
   --part-id A005 \
   --part-type A_005_CAST_PLT \
   --view-index 0 \
-  --inspection-key test_after_config_camera \
+  --inspection-key side_image_has_scratch \
+  --width 4208 \
+  --height 3120 \
   --count 150 \
   --delay-ms 500 \
-  --show-preview \
   --training-url http://100.100.108.27:8000/api/psm/upload-training-view

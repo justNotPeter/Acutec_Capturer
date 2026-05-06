@@ -20,8 +20,10 @@ def dispatch_to_jetson(jpeg_frame: bytes, current_part_metadata: dict, jetson_ur
         target_url = jetson_url or JETSON_URL
         if not target_url:
             raise RuntimeError("JETSON_URL is not configured.")
+        
+        manual_url = "http://100.100.108.27:8000/api/psm/upload-view"
 
-        resp = requests.post(target_url, files=files, timeout=10)
+        resp = requests.post(manual_url, files=files, timeout=10)
         resp.raise_for_status()
         return resp.json()
 
