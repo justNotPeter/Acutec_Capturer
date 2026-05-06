@@ -68,19 +68,40 @@ class Camera:
             print(f"Camera fourcc requested: {self.fourcc}")
         
 
+    # def capture_frame(self) -> tuple[np.ndarray, str]:
+    #     if self.cap is None:
+    #         raise RuntimeError("Camera not opened!")
+
+    #     ret, frame = self.cap.read()
+    #     if not ret:
+    #         raise RuntimeError("❌ Failed to capture frame from camera!")
+    #     if frame is None or frame.size == 0:
+    #         raise RuntimeError("❌ Camera returned an empty frame!")
+        
+    #     capture_time_utc = datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace("+00:00", "Z")
+
+    #     return frame, capture_time_utc
+    
     def capture_frame(self) -> tuple[np.ndarray, str]:
         if self.cap is None:
-            raise RuntimeError("Camera not opened!")
+            self.init_camera()
 
-        ret, frame = self.cap.read()
-        if not ret:
-            raise RuntimeError("❌ Failed to capture frame from camera!")
-        if frame is None or frame.size == 0:
-            raise RuntimeError("❌ Camera returned an empty frame!")
-        
-        capture_time_utc = datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace("+00:00", "Z")
+        # Flush buffered frames so we capture the latest robot pose.
+        for _ in range(8):
+            self.cap.grab()
 
-        return frame, capture_time_utc
+        ok, frame = self.cap.read()
+        if not ok or frame is None:
+            raise RuntimeError("Could not capture frame")
+
+        captured_time_utc = (
+            datetime.now(timezone.utc)
+            .isoformat(timespec="milliseconds")
+            .replace("+00:00", "Z")
+        )
+
+        return frame.copy(), captured_time_utc
+
     
     
     def set_resolution(self, width: int, height: int):

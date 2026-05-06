@@ -277,20 +277,29 @@ class PiStateMachine:
             )
 
         current_view_index = self.current_part["view_index"]
-                
-        self.current_part.update({
-            "view_index": current_view_index + 1, 
+
+        payload = dict(self.current_part)
+        payload.update({
+            "view_index": current_view_index,
             "qc_sharpness": frame_metrics["sharpness"],
             "qc_brightness": frame_metrics["brightness"],
             "qc_contrast": frame_metrics["contrast"],
-            "captured_time_utc": captured_time 
+            "captured_time_utc": captured_time,
         })
-        
+
         jpeg_frame = encode_to_jpeg(frame)
-        
-        result = dispatch_to_jetson(jpeg_frame, self.current_part, "http://100.100.108.27:8000/api/psm/upload-view")
+
+        result = dispatch_to_jetson(jpeg_frame, payload, "http://100.100.108.27:8000/api/psm/upload-view")
         print("The result object is: ", result)
-        
+
+        self.current_part.update({
+            "view_index": current_view_index + 1,
+            "qc_sharpness": frame_metrics["sharpness"],
+            "qc_brightness": frame_metrics["brightness"],
+            "qc_contrast": frame_metrics["contrast"],
+            "captured_time_utc": captured_time,
+        })
+
         if result and result.get("is_defective"):
             self.io.send_defective_signal()
         
