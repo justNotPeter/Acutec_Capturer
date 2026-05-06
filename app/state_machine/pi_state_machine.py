@@ -44,7 +44,7 @@ class PiStateMachine:
             "part_id": None,
             "part_type": None,
             "inspection_key": None,
-            "view_index": -1,
+            "view_index": 0,
             "sharpness": 0,
             "brightness": 0,
             "contrast": 0,
