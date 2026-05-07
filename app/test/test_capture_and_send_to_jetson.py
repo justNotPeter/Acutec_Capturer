@@ -100,8 +100,10 @@ def main() -> int:
 
         print("Sending live camera image to Jetson with metadata:")
         print(current_view_metadata)
+        
+        JETSON_URL="http://100.100.108.27:8000/api/psm/upload-view"
 
-        dispatch_to_jetson(jpeg_bytes, current_view_metadata)
+        dispatch_to_jetson(jpeg_bytes, current_view_metadata, JETSON_URL)
         print("Dispatch completed.")
         return 0
 
